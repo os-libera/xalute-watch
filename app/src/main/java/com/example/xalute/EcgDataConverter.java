@@ -46,7 +46,6 @@ public class EcgDataConverter {
             valueSampledData.put("origin", new JSONObject().put("value", 55));
             valueSampledData.put("period", 29.998046875);
 
-            // ecgDataList를 문자열로 변환합니다.
             StringBuilder ecgDataStringBuilder = new StringBuilder();
             for (int i = 0; i < ecgDataList.size(); i++) {
                 EcgData ecgData = ecgDataList.get(i);
@@ -74,8 +73,15 @@ public class EcgDataConverter {
             resource.put("status", "final");
             resource.put("code", new JSONObject());
 
-            // 완성된 JSON 객체를 문자열로 변환합니다.
-            return jsonObject.toString();
+            String finalJson = jsonObject.toString();
+
+            int maxLength = 3000;
+            for (int i = 0; i < finalJson.length(); i += maxLength) {
+                int end = Math.min(finalJson.length(), i + maxLength);
+                android.util.Log.d("FHIR_JSON", finalJson.substring(i, end));
+            }
+
+            return finalJson;
 
         } catch (JSONException e) {
             e.printStackTrace();

@@ -62,6 +62,7 @@ public class MessageService extends Service implements MessageClient.OnMessageRe
                         Log.e(TAG, "Target app not found");
                     }**/
                     Intent intent = new Intent(this, EcgInfoActivity.class);
+                    //Intent intent = new Intent(this, EcgActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     intent.putExtra("name", name);
                     intent.putExtra("birthDate", birthDate);

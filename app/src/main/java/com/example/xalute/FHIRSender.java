@@ -17,17 +17,12 @@ public class FHIRSender extends AsyncTask<String, Void, Boolean> {
     private FHIRSenderListener listener;
 
     public FHIRSender(Context context, FHIRSenderListener fhirSenderListener) {
+        this.context = context;
+        this.listener = fhirSenderListener;
     }
 
-    // FHIRSenderListener 인터페이스 정의
     public interface FHIRSenderListener {
         void onSendCompleted(boolean success);
-    }
-
-    // 수정된 생성자: Context와 Listener를 받음
-    public FHIRSender(Context context) {
-        this.context = context;
-        this.listener = listener;
     }
 
     @Override
