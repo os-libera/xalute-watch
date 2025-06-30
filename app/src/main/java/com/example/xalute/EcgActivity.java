@@ -103,7 +103,8 @@ public class EcgActivity extends FragmentActivity {
 
     private List<EcgData> ecgDataList = new ArrayList<>();
     CountDownTimer timer;
-
+    private int leadOffCount = 0;
+    private final int leadOffThreshold = 5;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -171,7 +172,6 @@ public class EcgActivity extends FragmentActivity {
 
 
     private void StartCountTimer() {
-        // 타이머 객체 정의
         if ( ecgTracker != null ) {
 
             timer = new CountDownTimer(30000, 1000) {
@@ -311,6 +311,7 @@ public class EcgActivity extends FragmentActivity {
                     int sampleEcg = list.get(0).getValue(ValueKey.EcgSet.ECG);
 
                     if (leadOff == 0) {
+                        leadOffCount = 0;
                         ecgContactState = ECG_CONTACTED;
                         if (!isTimerRunning) StartCountTimer();
 
@@ -318,11 +319,18 @@ public class EcgActivity extends FragmentActivity {
                         binding.ecg1DataValue.setText(String.valueOf(sampleEcg));
                         binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.green));
                     } else {
-                        binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
-                        ECGMeasurementError();
-                        ecgContactState = ECG_NOT_CONTACTED;
-                        Toast.makeText(getApplicationContext(), "위 빨간 홈 버튼에 손가락을 가볍게 올려 놓아주세요.", Toast.LENGTH_SHORT).show();
+                        leadOffCount++;
+                        if (leadOffCount >= leadOffThreshold) {
+                            ecgContactState = ECG_NOT_CONTACTED;
+                            binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
+                            ECGMeasurementError();
+                            Toast.makeText(getApplicationContext(), "위 빨간 홈 버튼에 손가락을 가볍게 올려 놓아주세요.", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.w(TAG, "⚠️ LeadOff 감지됨, 무시하고 측정 유지 중 (" + leadOffCount + "/" + leadOffThreshold + ")");
+                            binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
+                        }
                     }
+
 
                     binding.leadOffDataValue.setText(String.valueOf(leadOff));
                     binding.sequenceValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.SEQUENCE)));
