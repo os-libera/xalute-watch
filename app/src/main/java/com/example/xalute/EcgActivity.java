@@ -129,7 +129,7 @@ public class EcgActivity extends FragmentActivity {
                     return;
                 }
 
-                String server1Url = "http://34.44.245.53:3000/mutation/addData";
+                String server1Url = "http://35.238.174.154:3000/mutation/addData";
                 String currentTime = getCurrentTime();
 
                 // 6초 제거 알고리즘 삭제
@@ -472,7 +472,7 @@ public class EcgActivity extends FragmentActivity {
         }
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://34.69.44.173:7000")
+                .baseUrl("http://34.69.44.173:7001")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
