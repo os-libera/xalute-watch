@@ -129,7 +129,7 @@ public class EcgActivity extends FragmentActivity {
                     return;
                 }
 
-                String server1Url = "http://34.44.245.53:3000/mutation/addData";
+                String server1Url = "http://35.238.174.154:3000/mutation/addData";
                 String currentTime = getCurrentTime();
 
                 // 6초 제거 알고리즘 삭제
@@ -264,7 +264,7 @@ public class EcgActivity extends FragmentActivity {
             ).show();
 
             try {
-                ecgTracker = healthTrackingService.getHealthTracker(HealthTrackerType.ECG);
+                ecgTracker = healthTrackingService.getHealthTracker(HealthTrackerType.ECG_ON_DEMAND);
             } catch (final IllegalArgumentException e) {
                 runOnUiThread(() -> Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show()
                 );
@@ -314,7 +314,8 @@ public class EcgActivity extends FragmentActivity {
 
                     long correctedTimestamp = baseTimestamp + (long)(i * 2);
 
-                    int ecgVal = dp.getValue(ValueKey.EcgSet.ECG);
+                    Float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
+                    int ecgVal = (int)(ecgObj.floatValue());
                     int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
                     Log.i(TAG, "Timestamp : " + correctedTimestamp);
@@ -325,7 +326,8 @@ public class EcgActivity extends FragmentActivity {
 
                 runOnUiThread(() -> {
                     int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
-                    int sampleEcg = list.get(0).getValue(ValueKey.EcgSet.ECG);
+                    Float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
+                    int sampleEcg = (int)(sampleEcgObj.floatValue());
 
                     if (leadOff == 0) {
                         leadOffCount = 0;
@@ -359,8 +361,8 @@ public class EcgActivity extends FragmentActivity {
                         binding.ecgGreenDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.PPG_GREEN)));
                     }
 
-                    binding.thresholdMaxDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MAX_THRESHOLD)));
-                    binding.thresholdMinDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MIN_THRESHOLD)));
+                    binding.thresholdMaxDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MAX_THRESHOLD_MV)));
+                    binding.thresholdMinDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MIN_THRESHOLD_MV)));
                 });
 
             } else {
@@ -470,7 +472,7 @@ public class EcgActivity extends FragmentActivity {
         }
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://34.69.44.173:7000")
+                .baseUrl("http://34.69.44.173:7001")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
