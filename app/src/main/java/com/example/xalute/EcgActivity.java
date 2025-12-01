@@ -91,7 +91,8 @@ public class EcgActivity extends FragmentActivity {
     private List<EcgData> ecgDataList = new ArrayList<>();
     CountDownTimer timer;
     private int leadOffCount = 0;
-    private final int leadOffThreshold = 5;
+    private final int leadOffThreshold = 1000;
+    private final int NO_CONTACT = 5;
 
     private static final double RR_THRESHOLD = 0.31;
 
@@ -290,7 +291,7 @@ public class EcgActivity extends FragmentActivity {
         }
     };
 
-    public void addEcgData(int ecgValue, long timestamp) {
+    public void addEcgData(float ecgValue, long timestamp) {
         EcgData newEcgData = new EcgData(ecgValue, timestamp);
         ecgDataList.add(newEcgData);
         Log.d(TAG, "✅ 저장된 ECG 데이터 개수: " + ecgDataList.size());
@@ -314,21 +315,20 @@ public class EcgActivity extends FragmentActivity {
 
                     long correctedTimestamp = baseTimestamp + (long)(i * 2);
 
-                    Float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
-                    int ecgVal = (int)(ecgObj.floatValue());
-                    float ecgLog = (float)(ecgObj.floatValue());
+                    float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
+                    float ecgVal = Math.round(ecgObj * 100) / 100f;
                     int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
                     Log.i(TAG, "Timestamp : " + correctedTimestamp);
-                    Log.i(TAG, "ECG value : " + ecgLog);
+                    Log.i(TAG, "ECG value : " + ecgVal);
 
                     addEcgData(ecgVal, correctedTimestamp);
                 }
 
                 runOnUiThread(() -> {
                     int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
-                    Float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
-                    int sampleEcg = (int)(sampleEcgObj.floatValue());
+                    float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
+                    float sampleEcg = Math.round(sampleEcgObj * 100) / 100f;
 
                     if (leadOff == 0) {
                         leadOffCount = 0;
@@ -338,7 +338,7 @@ public class EcgActivity extends FragmentActivity {
                         binding.ecgAverage.setText(String.valueOf(sampleEcg));
                         binding.ecg1DataValue.setText(String.valueOf(sampleEcg));
                         binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.green));
-                    } else {
+                    } else if (leadOff == NO_CONTACT) {
                         leadOffCount++;
                         if (leadOffCount >= leadOffThreshold) {
                             ecgContactState = ECG_NOT_CONTACTED;

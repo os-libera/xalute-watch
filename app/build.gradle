@@ -13,7 +13,6 @@ android {
         targetSdk 33
         versionCode 3
         versionName "1.3"
-        buildToolsVersion "33.0.0"
 
     }
 
