@@ -3,20 +3,20 @@ import java.io.Serializable;
 
 
 public class EcgData implements Serializable {
-    private int ecgValue;
+    private float ecgValue;
     private long timestamp;
 
 
-    public EcgData(int ecgValue, long timestamp) {
+    public EcgData(float ecgValue, long timestamp) {
         this.ecgValue = ecgValue;
         this.timestamp = timestamp;
     }
 
-    public int getEcgValue() {
+    public float getEcgValue() {
         return ecgValue;
     }
 
-    public void setEcgValue(int ecgValue) {
+    public void setEcgValue(float ecgValue) {
         this.ecgValue = ecgValue;
     }
 
