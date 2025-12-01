@@ -316,10 +316,11 @@ public class EcgActivity extends FragmentActivity {
 
                     Float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
                     int ecgVal = (int)(ecgObj.floatValue());
+                    float ecgLog = (float)(ecgObj.floatValue());
                     int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
                     Log.i(TAG, "Timestamp : " + correctedTimestamp);
-                    Log.i(TAG, "ECG value : " + ecgVal);
+                    Log.i(TAG, "ECG value : " + ecgLog);
 
                     addEcgData(ecgVal, correctedTimestamp);
                 }
@@ -344,6 +345,11 @@ public class EcgActivity extends FragmentActivity {
                             binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
                             ECGMeasurementError();
                             Toast.makeText(getApplicationContext(), "위 빨간 홈 버튼에 손가락을 가볍게 올려 놓아주세요.", Toast.LENGTH_SHORT).show();
+
+                            //Convert to EcgInfoActivity
+                            Intent intent = new Intent(EcgActivity.this, EcgInfoActivity.class);
+                            startActivity(intent);
+                            finish();
                         } else {
                             Log.w(TAG, "⚠️ LeadOff 감지됨, 무시하고 측정 유지 중 (" + leadOffCount + "/" + leadOffThreshold + ")");
                             binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
