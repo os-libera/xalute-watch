@@ -91,8 +91,10 @@ public class EcgActivity extends FragmentActivity {
     private List<EcgData> ecgDataList = new ArrayList<>();
     CountDownTimer timer;
     private int leadOffCount = 0;
-    private final int leadOffThreshold = 5;
+    private final int leadOffThreshold = 500;
+    private final int NO_CONTACT = 5;
 
+    private boolean hasNavigated = false;
     private static final double RR_THRESHOLD = 0.31;
 
     private long previousBatchTime = 0;
@@ -193,12 +195,13 @@ public class EcgActivity extends FragmentActivity {
 
                 @Override
                 public void onFinish() {
-                    Log.d("ECGActivity", "onFinish called");
+                    if(!hasNavigated){
+                        Log.d("ECGActivity", "onFinish called");
 
-                    OnMessage("ECG Measurement Ended...!!");
-                    Toast.makeText(getApplicationContext(), "측정완료! SEND버튼을 눌러 전송하세요!", Toast.LENGTH_LONG).show();
-                    StopTrackerListner();
-
+                        OnMessage("ECG Measurement Ended...!!");
+                        Toast.makeText(getApplicationContext(), "측정완료! SEND버튼을 눌러 전송하세요!", Toast.LENGTH_LONG).show();
+                        StopTrackerListner();
+                    }
                 }
             }.start();
 
@@ -290,7 +293,7 @@ public class EcgActivity extends FragmentActivity {
         }
     };
 
-    public void addEcgData(int ecgValue, long timestamp) {
+    public void addEcgData(float ecgValue, long timestamp) {
         EcgData newEcgData = new EcgData(ecgValue, timestamp);
         ecgDataList.add(newEcgData);
         Log.d(TAG, "✅ 저장된 ECG 데이터 개수: " + ecgDataList.size());
@@ -314,8 +317,8 @@ public class EcgActivity extends FragmentActivity {
 
                     long correctedTimestamp = baseTimestamp + (long)(i * 2);
 
-                    Float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
-                    int ecgVal = (int)(ecgObj.floatValue());
+                    float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
+                    float ecgVal = Math.round(ecgObj * 100) / 100f;
                     int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
                     Log.i(TAG, "Timestamp : " + correctedTimestamp);
@@ -326,8 +329,8 @@ public class EcgActivity extends FragmentActivity {
 
                 runOnUiThread(() -> {
                     int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
-                    Float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
-                    int sampleEcg = (int)(sampleEcgObj.floatValue());
+                    float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
+                    float sampleEcg = Math.round(sampleEcgObj * 100) / 100f;
 
                     if (leadOff == 0) {
                         leadOffCount = 0;
@@ -337,13 +340,23 @@ public class EcgActivity extends FragmentActivity {
                         binding.ecgAverage.setText(String.valueOf(sampleEcg));
                         binding.ecg1DataValue.setText(String.valueOf(sampleEcg));
                         binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.green));
-                    } else {
+
+                    } else if (leadOff == NO_CONTACT) {// NO_CONTACT == 5 by SDK configuration
                         leadOffCount++;
                         if (leadOffCount >= leadOffThreshold) {
+                            //Initial value of leadOffThreshold == 1000
+
                             ecgContactState = ECG_NOT_CONTACTED;
                             binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
                             ECGMeasurementError();
-                            Toast.makeText(getApplicationContext(), "위 빨간 홈 버튼에 손가락을 가볍게 올려 놓아주세요.", Toast.LENGTH_SHORT).show();
+
+                            //Convert to EcgInfoActivity
+                            if(!hasNavigated) {
+                                hasNavigated = true;
+                                Intent intent = new Intent(EcgActivity.this, EcgInfoActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
                         } else {
                             Log.w(TAG, "⚠️ LeadOff 감지됨, 무시하고 측정 유지 중 (" + leadOffCount + "/" + leadOffThreshold + ")");
                             binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
@@ -351,7 +364,7 @@ public class EcgActivity extends FragmentActivity {
                     }
 
 
-                    binding.leadOffDataValue.setText(String.valueOf(leadOff));
+                    binding.leadOffDataValue.setText(String.valueOf(leadOffCount));
                     binding.sequenceValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.SEQUENCE)));
 
                     if (list.size() >= 6) {
@@ -429,6 +442,11 @@ public class EcgActivity extends FragmentActivity {
         if (ecgTracker != null) {
             ecgTracker.unsetEventListener();
             ecgTracker = null;
+        }
+
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
         }
 
         handler.removeCallbacksAndMessages(null);
