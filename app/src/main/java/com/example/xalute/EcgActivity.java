@@ -318,7 +318,8 @@ public class EcgActivity extends FragmentActivity {
                     long correctedTimestamp = baseTimestamp + (long)(i * 2);
 
                     float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
-                    float ecgVal = Math.round(ecgObj * 100) / 100f;
+                    //float ecgVal = Math.round(ecgObj * 100) / 100f;
+                    float ecgVal = ecgObj;
                     int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
                     Log.i(TAG, "Timestamp : " + correctedTimestamp);
@@ -330,7 +331,8 @@ public class EcgActivity extends FragmentActivity {
                 runOnUiThread(() -> {
                     int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
                     float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
-                    float sampleEcg = Math.round(sampleEcgObj * 100) / 100f;
+                    //float sampleEcg = Math.round(sampleEcgObj * 100) / 100f;
+                    float sampleEcg = sampleEcgObj;
 
                     if (leadOff == 0) {
                         leadOffCount = 0;
