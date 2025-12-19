@@ -315,7 +315,8 @@ public class EcgActivity extends FragmentActivity {
 
                     long baseTimestamp = dp.getTimestamp();
 
-                    long correctedTimestamp = baseTimestamp + (long)(i * 2);
+                    //long correctedTimestamp = baseTimestamp + (long)(i * 2);
+                    long correctedTimestamp = baseTimestamp;
 
                     float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
                     //float ecgVal = Math.round(ecgObj * 100) / 100f;
