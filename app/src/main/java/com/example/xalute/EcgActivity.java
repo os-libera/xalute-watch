@@ -99,6 +99,9 @@ public class EcgActivity extends FragmentActivity {
 
     private long previousBatchTime = 0;
 
+    private int total = 0;
+
+    private long lastUiUpdateTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -202,6 +205,7 @@ public class EcgActivity extends FragmentActivity {
                         Toast.makeText(getApplicationContext(), "측정완료! SEND버튼을 눌러 전송하세요!", Toast.LENGTH_LONG).show();
                         StopTrackerListner();
                     }
+                    total = 0;
                 }
             }.start();
 
@@ -262,19 +266,22 @@ public class EcgActivity extends FragmentActivity {
     private final ConnectionListener connectionListener = new ConnectionListener() {
         @Override
         public void onConnectionSuccess() {
+
             Toast.makeText(
                     getApplicationContext(),"Connected to HSP",Toast.LENGTH_SHORT
             ).show();
 
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 ecgTracker = healthTrackingService.getHealthTracker(HealthTrackerType.ECG_ON_DEMAND);
+                if (ecgTracker != null) {
+                    StartTrackerListner();
+                }
             } catch (final IllegalArgumentException e) {
-                runOnUiThread(() -> Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show()
-                );
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show());
                 finish();
-            }
-
-            StartTrackerListner();
+                }
+            }, 1001);
         }
 
         @Override
@@ -302,6 +309,11 @@ public class EcgActivity extends FragmentActivity {
     private final HealthTracker.TrackerEventListener trackerEventListener = new HealthTracker.TrackerEventListener() {
         @Override
         public void onDataReceived(@NonNull List<DataPoint> list) {
+            int lth = list.size();
+            total += lth;
+            String l = String.valueOf(total);
+            Log.i(TAG, "✅ Total Count : " + l);
+
             if (!list.isEmpty()) {
                 Log.i(TAG, "✅ List Size : " + list.size());
 
@@ -314,73 +326,73 @@ public class EcgActivity extends FragmentActivity {
                     DataPoint dp = list.get(i);
 
                     long baseTimestamp = dp.getTimestamp();
-
-                    //long correctedTimestamp = baseTimestamp + (long)(i * 2);
-                    long correctedTimestamp = baseTimestamp;
+                    long correctedTimestamp = baseTimestamp + (long)(i * 2);
 
                     float ecgObj = dp.getValue(ValueKey.EcgSet.ECG_MV);
-                    //float ecgVal = Math.round(ecgObj * 100) / 100f;
                     float ecgVal = ecgObj;
-                    int leadOff = dp.getValue(ValueKey.EcgSet.LEAD_OFF);
 
-                    Log.i(TAG, "Timestamp : " + correctedTimestamp);
-                    Log.i(TAG, "ECG value : " + ecgVal);
+                    //워치 자원 과부하로 로그는 주석 처리
+                    //Log.i(TAG, "Timestamp : " + correctedTimestamp);
+                    //Log.i(TAG, "ECG value : " + ecgVal);
 
                     addEcgData(ecgVal, correctedTimestamp);
                 }
 
-                runOnUiThread(() -> {
-                    int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
-                    float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
-                    //float sampleEcg = Math.round(sampleEcgObj * 100) / 100f;
-                    float sampleEcg = sampleEcgObj;
+                long currentTime = System.currentTimeMillis();
+                //업데이트 주기는 125로 임의 설정
+                if (currentTime - lastUiUpdateTime > 125) {
+                    lastUiUpdateTime = currentTime;
+                    runOnUiThread(() -> {
+                        int leadOff = list.get(0).getValue(ValueKey.EcgSet.LEAD_OFF);
+                        float sampleEcgObj = list.get(0).getValue(ValueKey.EcgSet.ECG_MV);
+                        float sampleEcg = sampleEcgObj;
 
-                    if (leadOff == 0) {
-                        leadOffCount = 0;
-                        ecgContactState = ECG_CONTACTED;
-                        if (!isTimerRunning) StartCountTimer();
+                        if (leadOff == 0) {
+                            leadOffCount = 0;
+                            ecgContactState = ECG_CONTACTED;
+                            if (!isTimerRunning) StartCountTimer();
 
-                        binding.ecgAverage.setText(String.valueOf(sampleEcg));
-                        binding.ecg1DataValue.setText(String.valueOf(sampleEcg));
-                        binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.green));
+                            binding.ecgAverage.setText(String.valueOf(sampleEcg));
+                            binding.ecg1DataValue.setText(String.valueOf(sampleEcg));
+                            binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.green));
 
-                    } else if (leadOff == NO_CONTACT) {// NO_CONTACT == 5 by SDK configuration
-                        leadOffCount++;
-                        if (leadOffCount >= leadOffThreshold) {
-                            //Initial value of leadOffThreshold == 1000
+                        } else if (leadOff == NO_CONTACT) {// NO_CONTACT == 5 by SDK configuration
+                            leadOffCount++;
+                            if (leadOffCount >= leadOffThreshold) {
+                                //Initial value of leadOffThreshold == 1000
 
-                            ecgContactState = ECG_NOT_CONTACTED;
-                            binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
-                            ECGMeasurementError();
+                                ecgContactState = ECG_NOT_CONTACTED;
+                                binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.red));
+                                ECGMeasurementError();
 
-                            //Convert to EcgInfoActivity
-                            if(!hasNavigated) {
-                                hasNavigated = true;
-                                Intent intent = new Intent(EcgActivity.this, EcgInfoActivity.class);
-                                startActivity(intent);
-                                finish();
+                                //Convert to EcgInfoActivity
+                                if (!hasNavigated) {
+                                    hasNavigated = true;
+                                    Intent intent = new Intent(EcgActivity.this, EcgInfoActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                }
+                            } else {
+                                Log.w(TAG, "⚠️ LeadOff 감지됨, 무시하고 측정 유지 중 (" + leadOffCount + "/" + leadOffThreshold + ")");
+                                binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
                             }
-                        } else {
-                            Log.w(TAG, "⚠️ LeadOff 감지됨, 무시하고 측정 유지 중 (" + leadOffCount + "/" + leadOffThreshold + ")");
-                            binding.leadOffDataValue.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gray));
                         }
-                    }
 
 
-                    binding.leadOffDataValue.setText(String.valueOf(leadOffCount));
-                    binding.sequenceValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.SEQUENCE)));
+                        binding.leadOffDataValue.setText(String.valueOf(leadOffCount));
+                        binding.sequenceValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.SEQUENCE)));
 
-                    if (list.size() >= 6) {
-                        int avgGreen = (list.get(0).getValue(ValueKey.EcgSet.PPG_GREEN) + list.get(5).getValue(ValueKey.EcgSet.PPG_GREEN)) / 2;
-                        binding.ecgGreenDataValue.setText(String.valueOf(avgGreen));
-                    } else {
-                        binding.ecgGreenDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.PPG_GREEN)));
-                    }
+                        if (list.size() >= 6) {
+                            int avgGreen = (list.get(0).getValue(ValueKey.EcgSet.PPG_GREEN) + list.get(5).getValue(ValueKey.EcgSet.PPG_GREEN)) / 2;
+                            binding.ecgGreenDataValue.setText(String.valueOf(avgGreen));
+                        } else {
+                            binding.ecgGreenDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.PPG_GREEN)));
+                        }
 
-                    binding.thresholdMaxDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MAX_THRESHOLD_MV)));
-                    binding.thresholdMinDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MIN_THRESHOLD_MV)));
-                });
-
+                        binding.thresholdMaxDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MAX_THRESHOLD_MV)));
+                        binding.thresholdMinDataValue.setText(String.valueOf(list.get(0).getValue(ValueKey.EcgSet.MIN_THRESHOLD_MV)));
+                    });
+                }
             } else {
                 Log.i(TAG, "⚠️ onDataReceived List is zero");
             }
